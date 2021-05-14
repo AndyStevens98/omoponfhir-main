@@ -37,6 +37,7 @@ import org.springframework.web.context.WebApplicationContext;
 import ca.uhn.fhir.rest.param.StringParam;
 import ca.uhn.fhir.rest.param.TokenParam;
 import edu.gatech.chai.omoponfhir.omopv6.r4.provider.CoverageResourceProvider;
+import edu.gatech.chai.omoponfhir.omopv6.r4.provider.OrganizationResourceProvider;
 import edu.gatech.chai.omoponfhir.omopv6.r4.utilities.AddressUtil;
 import edu.gatech.chai.omopv6.dba.service.CareSiteService;
 import edu.gatech.chai.omopv6.dba.service.LocationService;
@@ -44,6 +45,7 @@ import edu.gatech.chai.omopv6.dba.service.ParameterWrapper;
 import edu.gatech.chai.omopv6.dba.service.PayerPlanService;
 import edu.gatech.chai.omopv6.dba.service.VocabularyService;
 import edu.gatech.chai.omopv6.model.entity.PayerPlan;
+import edu.gatech.chai.omopv6.model.entity.CareSite;
 import edu.gatech.chai.omopv6.model.entity.Concept;
 import edu.gatech.chai.omopv6.model.entity.Location;
 
@@ -84,31 +86,56 @@ public class OmopCoverage extends BaseOmopResource<Coverage, PayerPlan, PayerPla
 		coverage.setId(new IdType(fhirId));
 
 		// TODO
-		if (careSite.getCareSiteName() != null && careSite.getCareSiteName() != "") {
-			organization.setName(careSite.getCareSiteName());
+		// General method of writing these: if omop table is not null (or Strings are not equal to "") then resource.setValue(omop table value)
+		// stop_reason_source_value
+		if (payerPlan.getStopReasonSourceValue() != null && payerPlan.getStopReasonSourceValue() != "") {
+			
 		}
+		
+		// sponsor_source_value
+		if (payerPlan.getSponsorSourceValue() != null && payerPlan.getSponsorSourceValue() != "") {
+			
+		}
+		
+		// contract_person_id
+		
+		// person_id
+		
+		// contract_source_value
+		
+		// payer_plan_period_start_date
+		
+		// payer_plan_period_end_date
+		
+		// payer_source_value
+		
+		// plan_source_value
+		
+		//if (careSite.getCareSiteName() != null && careSite.getCareSiteName() != "") {
+			//organization.setName(careSite.getCareSiteName());
+		//}
 
-		if (careSite.getPlaceOfServiceConcept() != null) {
-			String codeString = careSite.getPlaceOfServiceConcept().getConceptCode();
+		//if (careSite.getPlaceOfServiceConcept() != null) {
+			//String codeString = careSite.getPlaceOfServiceConcept().getConceptCode();
 //			String systemUriString = careSite.getPlaceOfServiceConcept().getVocabulary().getVocabularyReference();
-			String systemUriString = vocabularyService.findById(careSite.getPlaceOfServiceConcept().getVocabularyId()).getVocabularyReference();
-			String displayString = careSite.getPlaceOfServiceConcept().getConceptName();
+			//String systemUriString = vocabularyService.findById(careSite.getPlaceOfServiceConcept().getVocabularyId()).getVocabularyReference();
+			//String displayString = careSite.getPlaceOfServiceConcept().getConceptName();
 
-			CodeableConcept typeCodeableConcept = new CodeableConcept()
-					.addCoding(new Coding(systemUriString, codeString, displayString));
-			organization.addType(typeCodeableConcept);
-		}
+			//CodeableConcept typeCodeableConcept = new CodeableConcept()
+					//.addCoding(new Coding(systemUriString, codeString, displayString));
+			//organization.addType(typeCodeableConcept);
+		//}
 
-		if (careSite.getLocation() != null) {
+		//if (careSite.getLocation() != null) {
 			// WARNING check if mapping for lines are correct
-			organization.addAddress().setUse(AddressUse.HOME).addLine(careSite.getLocation().getAddress1())
-					.addLine(careSite.getLocation().getAddress2())
-					.setCity(careSite.getLocation().getCity()).setPostalCode(careSite.getLocation().getZip())
-					.setState(careSite.getLocation().getState());
+			//organization.addAddress().setUse(AddressUse.HOME).addLine(careSite.getLocation().getAddress1())
+					//.addLine(careSite.getLocation().getAddress2())
+					//.setCity(careSite.getLocation().getCity()).setPostalCode(careSite.getLocation().getZip())
+					//.setState(careSite.getLocation().getState());
 			// .setPeriod(period);
-		}
+		//}
 
-		return organization;
+		return coverage;
 	}
 
 	@Override
@@ -118,37 +145,37 @@ public class OmopCoverage extends BaseOmopResource<Coverage, PayerPlan, PayerPla
 
 		Long omopId = null;
 		if (fhirId != null) {
-			omopId = IdMapping.getOMOPfromFHIR(fhirId.getIdPartAsLong(), OrganizationResourceProvider.getType());
+			omopId = IdMapping.getOMOPfromFHIR(fhirId.getIdPartAsLong(), CoverageResourceProvider.getType());
 		} else {
 			// See if we have this already. If so, we throw error.
 			// Get the identifier to store the source information.
 			// If we found a matching one, replace this with the careSite.
-			List<Identifier> identifiers = organization.getIdentifier();
-			CareSite existingCareSite = null;
-			String careSiteSourceValue = null;
+			List<Identifier> identifiers = coverage.getIdentifier();
+			PayerPlan existingPayerPlan = null;
+			String payerPlanSourceValue = null;
 			for (Identifier identifier: identifiers) {
 				if (identifier.getValue().isEmpty() == false) {
-					careSiteSourceValue = identifier.getValue();
+					payerPlanSourceValue = identifier.getValue();
 					
-					existingCareSite = getMyOmopService().searchByColumnString("careSiteSourceValue", careSiteSourceValue).get(0);
-					if (existingCareSite != null) {
-						omopId = existingCareSite.getId();
+					existingPayerPlan = getMyOmopService().searchByColumnString("payerPlanSourceValue", payerPlanSourceValue).get(0);
+					if (existingPayerPlan != null) {
+						omopId = existingPayerPlan.getId();
 						break;
 					}
 				}
 			}
 		}
 
-		CareSite careSite = constructOmop(omopId, organization);
+		PayerPlan payerPlan = constructOmop(omopId, coverage);
 		
 		Long omopRecordId = null;
-		if (careSite.getId() != null) {
-			omopRecordId = getMyOmopService().update(careSite).getId();	
+		if (payerPlan.getId() != null) {
+			omopRecordId = getMyOmopService().update(payerPlan).getId();	
 		} else {
-			omopRecordId = getMyOmopService().create(careSite).getId();
+			omopRecordId = getMyOmopService().create(payerPlan).getId();
 		}
 		
-		Long fhirRecordId = IdMapping.getFHIRfromOMOP(omopRecordId, OrganizationResourceProvider.getType());
+		Long fhirRecordId = IdMapping.getFHIRfromOMOP(omopRecordId, CoverageResourceProvider.getType());
 		return fhirRecordId;
 	}
 
@@ -163,9 +190,9 @@ public class OmopCoverage extends BaseOmopResource<Coverage, PayerPlan, PayerPla
 	
 
 	@Override
-	public Organization constructResource(Long fhirId, CareSite entity, List<String> includes) {
-		Organization myOrganization = constructFHIR(fhirId, entity);
-		
+	public Coverage constructResource(Long fhirId, PayerPlan entity, List<String> includes) {
+		Coverage myCoverage = constructFHIR(fhirId, entity);
+		/*
 		if (!includes.isEmpty()) {
 			if (includes.contains("Organization:partof")) {
 				Reference partOfOrganization = myOrganization.getPartOf();
@@ -180,8 +207,8 @@ public class OmopCoverage extends BaseOmopResource<Coverage, PayerPlan, PayerPla
 				}
 			}
 		}
-
-		return myOrganization;
+		*/
+		return myCoverage;
 	}
 
 	public List<ParameterWrapper> mapParameter(String parameter, Object value, boolean or) {
@@ -218,7 +245,7 @@ public class OmopCoverage extends BaseOmopResource<Coverage, PayerPlan, PayerPla
 	}
 
 	@Override
-	public CareSite constructOmop(Long omopId, Organization myOrganization) {
+	public PayerPlan constructOmop(Long omopId, Coverage myCoverage) {
 		String careSiteSourceValue = null;
 		Location location = null;
 		
